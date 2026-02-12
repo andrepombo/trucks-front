@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; margin: 0; }
+.app { display: flex; flex-direction: column; height: 100%; }
+.header { padding: 12px; background: #0f172a; color: white; }
+.content { display: flex; flex: 1; }
+.sidebar { width: 360px; max-width: 100%; padding: 12px; border-right: 1px solid #e2e8f0; overflow: auto; }
+.map-pane { flex: 1; }
+.form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.button { padding: 10px 12px; border: none; background: #2563eb; color: white; border-radius: 6px; cursor: pointer; }
+.button:disabled { background: #94a3b8; cursor: not-allowed; }
+.error { color: #b91c1c; margin-top: 8px; white-space: pre-wrap; }
+.summary { margin-top: 12px; font-size: 14px; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0; }
+
+/* Custom map pins */
+.pin-wrapper { display: inline-block; }
+.marker-pin {
+  width: 24px;
+  height: 24px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  position: relative;
+  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(0,0,0,.35);
+}
+.marker-pin .pin-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.pin-red { background: #ef4444; }
+.pin-yellow { background: #f59e0b; }
+
+/* Ensure Leaflet tiles/markers work with Tailwind's preflight */
+.leaflet-container img,
+.leaflet-container .leaflet-marker-icon,
+.leaflet-container .leaflet-marker-shadow {
+  max-width: none !important;
+}
+/* Make sure the Leaflet container fills its parent */
+.leaflet-container { height: 100%; width: 100%; }
