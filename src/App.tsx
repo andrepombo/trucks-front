@@ -99,7 +99,7 @@ export default function App() {
         <aside className="w-52 md:w-56 shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 p-4 overflow-auto sidebar">
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="form-row">
-              <label htmlFor="startInput" className="text-sm font-medium text-slate-700">Start</label>
+              <label htmlFor="startInput" className="text-sm font-medium text-slate-700">Start:</label>
               <CityAutocomplete
                 id="startInput"
                 className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 input"
@@ -109,7 +109,7 @@ export default function App() {
               />
             </div>
             <div className="form-row">
-              <label htmlFor="finishInput" className="text-sm font-medium text-slate-700">Finish</label>
+              <label htmlFor="finishInput" className="text-sm font-medium text-slate-700">Finish:</label>
               <CityAutocomplete
                 id="finishInput"
                 className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 input"
