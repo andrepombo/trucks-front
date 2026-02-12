@@ -10,7 +10,8 @@ interface Props extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onCha
 }
 
 export default function CityAutocomplete({ value, onChange, className, placeholder, id, ...rest }: Props) {
-  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined
+  const apiKeyRaw = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined
+  const apiKey = apiKeyRaw ? apiKeyRaw.trim().replace(/^['"]+|['"]+$/g, '') : undefined
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

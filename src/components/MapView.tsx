@@ -46,7 +46,8 @@ export default function MapView({
   startLabel?: string
   finishLabel?: string
 }) {
-  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined
+  const apiKeyRaw = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined
+  const apiKey = apiKeyRaw ? apiKeyRaw.trim().replace(/^['"]+|['"]+$/g, '') : undefined
   const useGeoapify = Boolean(apiKey && apiKey.length > 0)
 
   const tileUrl = useGeoapify
