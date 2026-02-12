@@ -93,7 +93,7 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-slate-50 app">
-      <div className="px-4 py-3 bg-slate-900 text-white text-lg font-semibold shadow-sm header"><span role="img" aria-label="United States flag" style={{ marginRight: 8 }}>🇺🇸</span>Trucks Route Planner - USA</div>
+      <div className="px-4 py-3 bg-slate-900 text-white text-lg font-semibold shadow-sm header"><span role="img" aria-label="United States flag" style={{ marginRight: 8 }}>🇺🇸</span>Truck Route Planner - USA</div>
       <div className="flex flex-1 min-h-0 content">
         <aside className="w-52 md:w-56 shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 p-4 overflow-auto sidebar">
           <form onSubmit={onSubmit} className="space-y-4">
