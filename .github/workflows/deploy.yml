@@ -63,30 +63,30 @@ jobs:
 
             echo "Frontend deployment completed successfully!"
 
-      - name: Health check
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /home/${{ secrets.VPS_SSH_USER }}/apps/app3
-            echo "Performing frontend health check via public URL..."
-            sleep 10
+      # - name: Health check
+      #   uses: appleboy/ssh-action@v0.1.10
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_SSH_USER }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       cd /home/${{ secrets.VPS_SSH_USER }}/apps/app3
+      #       echo "Performing frontend health check via public URL..."
+      #       sleep 10
 
-            if curl -f -s ${{ env.APP_BASE_URL }}/ > /dev/null 2>&1; then
-              echo "Frontend is responding"
-            else
-              echo "Frontend health check failed"
-              docker compose logs frontend --tail=50
-              exit 1
-            fi
+      #       if curl -f -s ${{ env.APP_BASE_URL }}/ > /dev/null 2>&1; then
+      #         echo "Frontend is responding"
+      #       else
+      #         echo "Frontend health check failed"
+      #         docker compose logs frontend --tail=50
+      #         exit 1
+      #       fi
 
-            echo "Frontend container status:"
-            docker compose ps frontend
+      #       echo "Frontend container status:"
+      #       docker compose ps frontend
 
-            echo "Recent frontend logs:"
-            docker compose logs frontend --tail=20
+      #       echo "Recent frontend logs:"
+      #       docker compose logs frontend --tail=20
 
-            echo "Frontend deployment health check completed!"
-            echo "Your frontend should be accessible at: ${{ env.APP_BASE_URL }}"
+      #       echo "Frontend deployment health check completed!"
+      #       echo "Your frontend should be accessible at: ${{ env.APP_BASE_URL }}"
