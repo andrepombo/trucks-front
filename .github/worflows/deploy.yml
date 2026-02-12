@@ -1,0 +1,92 @@
+name: Deploy Frontend to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: true
+
+env:
+  APP_BASE_URL: https://app3.andrepombo.info
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        env:
+          ENV: ${{ secrets.ENV }}
+        run: |
+          echo "ENV=${ENV}" >> .env
+
+      - name: Copy files to VPS
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          ARGS: "-rlgoDzvc -i"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: ${{ secrets.VPS_SSH_USER }}
+          TARGET: '/home/${{ secrets.VPS_SSH_USER }}/apps/app3/frontend'
+          EXCLUDE: "/dist/, /node_modules/, /.git/, /venv/, /__pycache__/, *.pyc, /coverage/, /.vscode/, /.idea/"
+          SCRIPT_AFTER: |
+            echo "Files copied successfully"
+            echo "Cleaning up unused Docker resources..."
+            docker system prune -f
+
+      - name: Build and start frontend container
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.VPS_SSH_USER }}/apps/app3
+
+            echo "Building and starting frontend container..."
+            docker compose up -d --build frontend
+
+            echo "Waiting for services to start..."
+            sleep 30
+
+            echo "Checking container status for frontend..."
+            docker compose ps frontend
+
+            echo "Frontend deployment completed successfully!"
+
+      - name: Health check
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.VPS_SSH_USER }}/apps/app3
+            echo "Performing frontend health check via public URL..."
+            sleep 10
+
+            if curl -f -s ${{ env.APP_BASE_URL }}/ > /dev/null 2>&1; then
+              echo "Frontend is responding"
+            else
+              echo "Frontend health check failed"
+              docker compose logs frontend --tail=50
+              exit 1
+            fi
+
+            echo "Frontend container status:"
+            docker compose ps frontend
+
+            echo "Recent frontend logs:"
+            docker compose logs frontend --tail=20
+
+            echo "Frontend deployment health check completed!"
+            echo "Your frontend should be accessible at: ${{ env.APP_BASE_URL }}"
