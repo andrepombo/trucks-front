@@ -22,9 +22,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file
+      - name: Create .env.production for Vite build
         run: |
-          echo "VITE_GEOAPIFY_API_KEY=${{ secrets.GEOAPIFY_API_KEY }}" > .env
+          echo "VITE_GEOAPIFY_API_KEY=${{ secrets.GEOAPIFY_API_KEY }}" > .env.production
 
       - name: Copy files to VPS
         uses: easingthemes/ssh-deploy@main
@@ -49,6 +49,20 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/${{ secrets.VPS_SSH_USER }}/apps/app3
+
+            echo "Verifying .env.production presence and contents..."
+            if [ -f frontend/.env.production ]; then
+              echo ".env.production found"
+            else
+              echo "ERROR: frontend/.env.production is missing"
+              exit 1
+            fi
+            if grep -qE '^VITE_GEOAPIFY_API_KEY=' frontend/.env.production; then
+              echo "Geoapify key entry present in .env.production"
+            else
+              echo "ERROR: VITE_GEOAPIFY_API_KEY is missing or empty in .env.production"
+              exit 1
+            fi
 
             echo "Building and starting frontend container..."
             docker compose up -d --build frontend
