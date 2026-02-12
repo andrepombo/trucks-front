@@ -97,27 +97,27 @@ export default function App() {
       <div className="flex flex-1 min-h-0 content">
         <aside className="w-80 md:w-96 shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 p-4 overflow-auto sidebar">
           <form onSubmit={onSubmit} className="space-y-4">
-            <div>
+            <div className="form-row">
               <label htmlFor="startInput" className="text-sm font-medium text-slate-700">Start</label>
               <input
                 id="startInput"
-                className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 input"
                 placeholder="e.g. Denver, CO"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
               />
             </div>
-            <div>
+            <div className="form-row">
               <label htmlFor="finishInput" className="text-sm font-medium text-slate-700">Finish</label>
               <input
                 id="finishInput"
-                className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 input"
                 placeholder="e.g. Kansas City, MO"
                 value={finish}
                 onChange={(e) => setFinish(e.target.value)}
               />
             </div>
-            <div>
+            <div className="form-row">
               <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
@@ -128,12 +128,12 @@ export default function App() {
                 Start with empty tank
               </label>
             </div>
-            <button className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed" type="submit" disabled={loading}>
+            <button className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed button" type="submit" disabled={loading}>
               {loading ? 'Planning...' : 'Plan route'}
             </button>
-            {error && <div className="mt-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-2 whitespace-pre-wrap">{error}</div>}
+            {error && <div className="mt-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-2 whitespace-pre-wrap error">{error}</div>}
             {summary && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 space-y-1">
+              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 space-y-1 summary">
                 <div>
                   <strong>Distance:</strong>{' '}
                   {(
@@ -155,14 +155,9 @@ export default function App() {
               </div>
             )}
           </form>
-          <div className="my-4 h-px bg-slate-200"></div>
+          <hr className="my-4 border-slate-200" />
           <div className="text-xs text-slate-500 space-y-1">
-            <div>
-              <strong>Backend:</strong> {import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'} (via proxy)
-            </div>
-            <div>
-              <strong>Tiles:</strong> {import.meta.env.VITE_GEOAPIFY_API_KEY ? 'Geoapify' : 'OpenStreetMap'}
-            </div>
+            
           </div>
         </aside>
         <div className="flex-1 min-w-0 min-h-0 relative map-pane">
