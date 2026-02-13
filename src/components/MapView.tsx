@@ -19,6 +19,7 @@ function FitBounds({ points }: { points: LatLng[] }) {
 }
 
 export interface StopPoint {
+  station_id?: number
   lat?: number
   lon?: number
   name?: string
@@ -109,7 +110,7 @@ export default function MapView({
       {stops
         ?.filter((s) => typeof s.lat === 'number' && typeof s.lon === 'number')
         .map((s, idx) => (
-          <Marker key={idx} position={[s.lat!, s.lon!]} icon={yellowPin}
+          <Marker key={s.station_id ?? idx} position={[s.lat!, s.lon!]} icon={yellowPin}
           >
             <Popup>
               <div>

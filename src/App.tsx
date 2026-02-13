@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import MapView, { StopPoint } from './components/MapView'
 import CityAutocomplete from './components/CityAutocomplete'
 import { planRoute, PlanRouteResponse } from './api'
@@ -34,6 +34,15 @@ export default function App() {
   const [summary, setSummary] = useState<any | null>(null)
   const [startEmpty, setStartEmpty] = useState(true)
   const abortRef = useRef<AbortController | null>(null)
+  const reqIdRef = useRef(0)
+
+  const mapKey = useMemo(() => {
+    const ids = (stops ?? [])
+      .map((s) => (typeof s.station_id === 'number' ? String(s.station_id) : `${s.lat ?? ''},${s.lon ?? ''}`))
+      .join(',')
+    const n = summary?.stops_count ?? (stops?.length ?? 0)
+    return `mv-${n}-${ids}`
+  }, [stops, summary?.stops_count])
 
   function formatCityState(raw?: string): string | undefined {
     if (!raw) return raw
@@ -62,15 +71,21 @@ export default function App() {
       abortRef.current?.abort()
       const ac = new AbortController()
       abortRef.current = ac
+      const myId = ++reqIdRef.current
       setLoading(true)
       const res: PlanRouteResponse = await planRoute({ start, finish, start_empty: startEmpty }, ac.signal)
       if (res.error) {
         setError(res.error)
       }
+      if (reqIdRef.current !== myId) {
+        // A newer request has been issued; ignore this response
+        return
+      }
       const latlngs = toLatLngs(res.route?.geometry)
       setRoute(latlngs)
       const stopPts: StopPoint[] = Array.isArray(res.stops)
         ? res.stops.map((s: any) => ({
+            station_id: typeof s.station_id === 'number' ? s.station_id : undefined,
             lat: typeof s.lat === 'number' ? s.lat : Array.isArray(s.coord) ? s.coord[1] : undefined,
             lon: typeof s.lon === 'number' ? s.lon : Array.isArray(s.coord) ? s.coord[0] : undefined,
             name: s.name,
@@ -83,7 +98,19 @@ export default function App() {
             mile_on_route: typeof s.mile_on_route === 'number' ? s.mile_on_route : undefined
           }))
         : []
-      setStops(stopPts)
+      // Deduplicate by station_id, or by lat/lon if id missing
+      const seen = new Set<string>()
+      const dedup: StopPoint[] = []
+      for (const s of stopPts) {
+        const key = typeof s.station_id === 'number'
+          ? `id:${s.station_id}`
+          : `ll:${s.lat?.toFixed?.(6) ?? ''},${s.lon?.toFixed?.(6) ?? ''}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          dedup.push(s)
+        }
+      }
+      setStops(dedup)
       setSummary(res.summary || null)
     } catch (err: any) {
       setError(err?.message || String(err))
@@ -146,7 +173,7 @@ export default function App() {
                   <strong>Duration:</strong> {summary.duration_hours} h
                 </div>
                 <div>
-                  <strong>Stops:</strong> {summary.stops_count}
+                  <strong>Stops:</strong> {stops?.length ?? 0}
                 </div>
                 {'total_cost' in summary && (
                   <div>
@@ -163,6 +190,7 @@ export default function App() {
         </aside>
         <div className="flex-1 min-w-0 min-h-0 relative map-pane">
           <MapView
+            key={mapKey}
             route={route}
             stops={stops}
             startPoint={route && route.length > 0 ? route[0] : null}
