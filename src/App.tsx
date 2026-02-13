@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react'
 import MapView, { StopPoint } from './components/MapView'
 import CityAutocomplete from './components/CityAutocomplete'
-import { planRoute, PlanRouteResponse } from './api'
+import { planRoute, routeThroughStops, PlanRouteResponse } from './api'
 
 type LatLng = [number, number]
 
@@ -42,8 +42,9 @@ export default function App() {
       .map((s) => (typeof s.station_id === 'number' ? String(s.station_id) : `${s.lat ?? ''},${s.lon ?? ''}`))
       .join(',')
     const n = summary?.stops_count ?? (stops?.length ?? 0)
-    return `mv-${n}-${ids}`
-  }, [stops, summary?.stops_count])
+    const hasDetour = route.length > 0 ? '1' : '0'
+    return `mv-${n}-${ids}-${hasDetour}`
+  }, [stops, summary?.stops_count, route.length])
 
   function formatCityState(raw?: string): string | undefined {
     if (!raw) return raw
@@ -83,10 +84,10 @@ export default function App() {
         // A newer request has been issued; ignore this response
         return
       }
-      const detourLatLngs = toLatLngs(res.route?.geometry)
-      const baseLatLngs = toLatLngs((res as any).base_route?.geometry)
-      setRoute(detourLatLngs)
+      // Show the base A->B route + stops immediately
+      const baseLatLngs = toLatLngs(res.route?.geometry)
       setBaseRoute(baseLatLngs)
+      setRoute([]) // no detour route yet
       const stopPts: StopPoint[] = Array.isArray(res.stops)
         ? res.stops.map((s: any) => ({
             station_id: typeof s.station_id === 'number' ? s.station_id : undefined,
@@ -116,6 +117,45 @@ export default function App() {
       }
       setStops(dedup)
       setSummary(res.summary || null)
+
+      // Fire the second request in the background to get the detour route
+      // through the fuel stops. This updates the map progressively.
+      if (dedup.length > 0) {
+        const waypoints: number[][] = []
+        // Start point from the base route geometry (first coordinate, in lon/lat)
+        const routeCoords = res.route?.geometry?.coordinates
+        if (routeCoords && routeCoords.length > 0) {
+          const first = Array.isArray(routeCoords[0][0]) ? routeCoords[0][0] : routeCoords[0]
+          waypoints.push([first[0], first[1]])
+        }
+        // Stop coordinates (already lon/lat)
+        for (const s of dedup) {
+          if (typeof s.lon === 'number' && typeof s.lat === 'number') {
+            waypoints.push([s.lon, s.lat])
+          }
+        }
+        // End point from the base route geometry (last coordinate)
+        if (routeCoords && routeCoords.length > 0) {
+          const last = Array.isArray(routeCoords[0][0])
+            ? routeCoords[routeCoords.length - 1][routeCoords[routeCoords.length - 1].length - 1]
+            : routeCoords[routeCoords.length - 1]
+          waypoints.push([last[0], last[1]])
+        }
+        if (waypoints.length >= 2) {
+          // Don't await — let it resolve in the background
+          routeThroughStops(waypoints, ac.signal)
+            .then((detourRes) => {
+              if (reqIdRef.current !== myId) return // stale
+              const detourLatLngs = toLatLngs(detourRes.route?.geometry)
+              if (detourLatLngs.length > 0) {
+                setRoute(detourLatLngs)
+              }
+            })
+            .catch(() => {
+              // Silently ignore — the base route is already shown
+            })
+        }
+      }
     } catch (err: any) {
       setError(err?.message || String(err))
     } finally {
@@ -198,8 +238,8 @@ export default function App() {
             route={route}
             baseRoute={baseRoute}
             stops={stops}
-            startPoint={route && route.length > 0 ? route[0] : null}
-            finishPoint={route && route.length > 0 ? route[route.length - 1] : null}
+            startPoint={baseRoute && baseRoute.length > 0 ? baseRoute[0] : null}
+            finishPoint={baseRoute && baseRoute.length > 0 ? baseRoute[baseRoute.length - 1] : null}
             startLabel={formatCityState(summary?.start ?? start)}
             finishLabel={formatCityState(summary?.finish ?? finish)}
           />
