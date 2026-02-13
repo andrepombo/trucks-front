@@ -34,6 +34,7 @@ export interface StopPoint {
 
 export default function MapView({
   route,
+  baseRoute,
   stops,
   startPoint,
   finishPoint,
@@ -41,6 +42,7 @@ export default function MapView({
   finishLabel
 }: {
   route: LatLng[]
+  baseRoute?: LatLng[]
   stops?: StopPoint[]
   startPoint?: LatLng | null
   finishPoint?: LatLng | null
@@ -88,6 +90,63 @@ export default function MapView({
   // default map center: continental US
   const center: LatLng = [39.5, -98.35]
 
+  // Helper to approximate divergence between the base A->B route and the
+  // actual route that visits fuel stops. We classify segments into:
+  // - blue: detour route segments that are close to the base route
+  // - red: detour route segments that are far from the base (true detours)
+  // - green: the whole base route for context
+  const base = baseRoute && baseRoute.length > 1 ? baseRoute : null
+  const detour = route && route.length > 1 ? route : null
+
+  function dist2(a: LatLng, b: LatLng): number {
+    const dx = a[0] - b[0]
+    const dy = a[1] - b[1]
+    return dx * dx + dy * dy
+  }
+
+  function minDist2ToBase(p: LatLng): number {
+    if (!base) return Number.POSITIVE_INFINITY
+    let best = Number.POSITIVE_INFINITY
+    for (let i = 0; i < base.length; i++) {
+      const d2 = dist2(p, base[i])
+      if (d2 < best) best = d2
+    }
+    return best
+  }
+
+  const greenSegments: LatLng[][] = []
+  const redSegments: LatLng[][] = []
+
+  if (detour && base) {
+    const GREEN_THRESHOLD_DEG2 = 0.0005 * 0.0005
+    let current: LatLng[] = []
+    let currentIsGreen = false
+
+    for (let i = 0; i < detour.length; i++) {
+      const pt = detour[i]
+      const near = minDist2ToBase(pt) <= GREEN_THRESHOLD_DEG2
+      if (i === 0) {
+        currentIsGreen = near
+        current.push(pt)
+        continue
+      }
+      if (near === currentIsGreen) {
+        current.push(pt)
+      } else {
+        if (current.length > 1) {
+          if (currentIsGreen) greenSegments.push(current)
+          else redSegments.push(current)
+        }
+        current = [detour[i - 1], pt]
+        currentIsGreen = near
+      }
+    }
+    if (current.length > 1) {
+      if (currentIsGreen) greenSegments.push(current)
+      else redSegments.push(current)
+    }
+  }
+
   return (
     <MapContainer center={center} zoom={4} className="map-pane absolute inset-0" style={{ height: '100%', width: '100%' }}>
       <TileLayer url={tileUrl} attribution={attribution} />
@@ -101,12 +160,29 @@ export default function MapView({
           <Popup>{finishLabel ? `Finish: ${finishLabel}` : 'Finish'}</Popup>
         </Marker>
       )}
-      {route && route.length > 0 && (
+      {/* Always show the base A->B route in blue for context */}
+      {base && base.length > 0 && (
         <>
-          <Polyline positions={route} pathOptions={{ color: '#2563eb', weight: 5 }} />
-          <FitBounds points={route} />
+          {/* Base route: dark outline + green stroke */}
+          <Polyline positions={base} pathOptions={{ color: '#0f172a', weight: 7, opacity: 0.95 }} />
+          <Polyline positions={base} pathOptions={{ color: '#16a34a', weight: 5, opacity: 1 }} />
+          <FitBounds points={base} />
         </>
       )}
+      {/* Show blue segments where the actual route follows the base */}
+      {greenSegments.map((seg, idx) => (
+        <React.Fragment key={`g-${idx}`}>
+          <Polyline positions={seg} pathOptions={{ color: '#0f172a', weight: 9, opacity: 0.95 }} />
+          <Polyline positions={seg} pathOptions={{ color: '#2563eb', weight: 7, opacity: 1 }} />
+        </React.Fragment>
+      ))}
+      {/* Show red segments where the actual route detours away from the base (into/out of stops) */}
+      {redSegments.map((seg, idx) => (
+        <React.Fragment key={`r-${idx}`}>
+          <Polyline positions={seg} pathOptions={{ color: '#0f172a', weight: 9, opacity: 0.95 }} />
+          <Polyline positions={seg} pathOptions={{ color: '#dc2626', weight: 7, opacity: 1 }} />
+        </React.Fragment>
+      ))}
       {stops
         ?.filter((s) => typeof s.lat === 'number' && typeof s.lon === 'number')
         .map((s, idx) => (

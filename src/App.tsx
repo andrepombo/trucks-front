@@ -30,6 +30,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [route, setRoute] = useState<LatLng[]>([])
+  const [baseRoute, setBaseRoute] = useState<LatLng[]>([])
   const [stops, setStops] = useState<StopPoint[]>([])
   const [summary, setSummary] = useState<any | null>(null)
   const [startEmpty, setStartEmpty] = useState(true)
@@ -62,6 +63,7 @@ export default function App() {
     setError(null)
     setSummary(null)
     setRoute([])
+    setBaseRoute([])
     setStops([])
     if (!start || !finish) {
       setError('Please enter both Start and Finish.')
@@ -81,8 +83,10 @@ export default function App() {
         // A newer request has been issued; ignore this response
         return
       }
-      const latlngs = toLatLngs(res.route?.geometry)
-      setRoute(latlngs)
+      const detourLatLngs = toLatLngs(res.route?.geometry)
+      const baseLatLngs = toLatLngs((res as any).base_route?.geometry)
+      setRoute(detourLatLngs)
+      setBaseRoute(baseLatLngs)
       const stopPts: StopPoint[] = Array.isArray(res.stops)
         ? res.stops.map((s: any) => ({
             station_id: typeof s.station_id === 'number' ? s.station_id : undefined,
@@ -192,6 +196,7 @@ export default function App() {
           <MapView
             key={mapKey}
             route={route}
+            baseRoute={baseRoute}
             stops={stops}
             startPoint={route && route.length > 0 ? route[0] : null}
             finishPoint={route && route.length > 0 ? route[route.length - 1] : null}
